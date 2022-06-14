@@ -21,7 +21,7 @@ Parameters:
 
   PublicSubnet2CIDR:
     Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Type: String
     Default: 10.192.11.0/24
 
   PrivateSubnet1CIDR:
@@ -38,12 +38,10 @@ Parameters:
     Description: Instance hosting a web server.
     Type: String
     Default: t2.micro
-    
-  
   ImageId:
     Description: Template that will run on the EC2
-    Type: String
-    Default: ami-02541b8af977f6cdd
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 
 
 Resources:
