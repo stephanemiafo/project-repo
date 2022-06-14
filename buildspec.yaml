@@ -10,8 +10,8 @@ phases:
       - aws --version
       - echo Checking if python exist...
       - python --version
-      - echo Checking if cfn lint install...
-      - cfn-lint --version
+      
+      
       
   build:
     commands:
