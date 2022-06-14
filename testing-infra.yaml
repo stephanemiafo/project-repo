@@ -217,6 +217,9 @@ Resources:
       SecurityGroupIds: 
         - Ref: SecurityGroup
       SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-Server
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -225,6 +228,7 @@ Resources:
           systemctl start httpd
           systemctl enable httpd
           echo “Hello from server in ${AWS::Region}” > /var/www/html/index.html
+
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
