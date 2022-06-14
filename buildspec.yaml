@@ -1,0 +1,31 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+  pre_build:
+    commands:
+      - echo Checking if aws-cli exist...
+      - aws --version
+      - echo Checking if python exist...
+      - python --version
+      - echo Checking if cfn lint install...
+      - cfn-lint --version
+      
+  build:
+    commands:
+      - echo Build cfn template started on `date`
+      - echo Installing cfn-lint 
+      - pip3 install cfn-lint
+      - echo validate cfn template
+      - cfn-lint testing-infra.yaml
+      - echo package the cfn template
+      - aws cloudformation package --template-file testing-infra.yaml --s3-bucket madmadmad1234 --output-template-file output-artifacts.yaml
+  post_build:
+    commands:
+      - echo Build completed on `date`
+artifacts:
+  files:
+    - testing-infra.yaml
+    - output-artifacts.yaml
