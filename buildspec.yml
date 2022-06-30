@@ -9,7 +9,9 @@ phases:
       - echo Checking if aws-cli exist...
       - aws --version
       - echo Checking if python exist...
-      - python --version
+      - python3 --version
+      - echo Check if pip3 exist...
+      - pip3 --version
       
       
       
@@ -21,11 +23,11 @@ phases:
       - echo validate cfn template
       - cfn-lint testing-infra.yaml
       - echo package the cfn template
-      - aws cloudformation package --template-file database.yaml --s3-bucket madmadmad1234 --output-template-file output-artifacts.yaml
+      - aws cloudformation package --template-file testing-infra.yaml --s3-bucket madmadmad1234 --output-template-file output-artifacts.yaml
   post_build:
     commands:
       - echo Build completed on `date`
 artifacts:
   files:
-    - database.yaml
+    - testing-infra.yaml
     - output-artifacts.yaml

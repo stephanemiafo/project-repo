@@ -1,13 +1,18 @@
 
-Description:  This template deploys a VPC, with a pair of public and private subnets spread
-  across two Availability Zones. It deploys an internet gateway, with a default
-  route on the public subnets. It deploys a pair of NAT gateways (one in each AZ),
-  and default routes for them in the private subnets.
+Description:  This template deploys a VPC, with three public and private subnets spread
+  across three Availability Zones. It deploys an internet gateway, with a default
+  route on the public subnets. It deploys three NAT gateways (one in each AZ),
+  and default routes for them in the private subnets. 
 
 Parameters:
   EnvironmentName:
     Description: An environment name that is prefixed to resource names
     Type: String
+    Default: "test"
+    AllowedValues: 
+      - test
+      - dev
+      - prod
 
   VpcCIDR:
     Description: Please enter the IP range (CIDR notation) for this VPC
@@ -24,6 +29,11 @@ Parameters:
     Type: String
     Default: 10.192.11.0/24
 
+  PublicSubnet3CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the third Availability Zone
+    Type: String
+    Default: 10.192.5.0/24
+
   PrivateSubnet1CIDR:
     Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
     Type: String
@@ -34,6 +44,11 @@ Parameters:
     Type: String
     Default: 10.192.21.0/24
 
+  PrivateSubnet3CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the third Availability Zone
+    Type: String
+    Default: 10.192.6.0/24
+
   DataBaseSubnet1CIDR:
     Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
     Type: String
@@ -43,6 +58,11 @@ Parameters:
     Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
     Type: String
     Default: 10.192.1.0/24
+
+  DataBaseSubnet3CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the third Availability Zone
+    Type: String
+    Default: 10.192.7.0/24
 
   InstanceType:
     Description: Instance hosting a web server.
@@ -101,6 +121,17 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
 
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 2, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet3CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ3)
+
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -122,6 +153,17 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet3CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ3)
       
   DataBaseSubnet1:
     Type: AWS::EC2::Subnet
@@ -145,6 +187,17 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-DB-sub (AZ2)
 
+  DataBaseSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      CidrBlock: !Ref DataBaseSubnet3CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-DB-sub (AZ3)
+
   NatGateway1EIP:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
@@ -152,6 +205,13 @@ Resources:
       Domain: vpc
 
   NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  
+  NatGateway3EIP:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
     Properties:
@@ -169,13 +229,19 @@ Resources:
       AllocationId: !GetAtt NatGateway2EIP.AllocationId
       SubnetId: !Ref PublicSubnet2
 
+  NatGateway3:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway3EIP.AllocationId
+      SubnetId: !Ref PublicSubnet3    
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Public Routes
+          Value: !Sub ${EnvironmentName} Public RTB
 
   DefaultPublicRoute:
     Type: AWS::EC2::Route
@@ -197,6 +263,13 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet2
 
+  PublicSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet3
+
+
 
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
@@ -204,7 +277,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+          Value: !Sub ${EnvironmentName} Private RTB (AZ1)
 
   DefaultPrivateRoute1:
     Type: AWS::EC2::Route
@@ -225,7 +298,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Private Routes (AZ2)
+          Value: !Sub ${EnvironmentName} Private RTB (AZ2)
 
   DefaultPrivateRoute2:
     Type: AWS::EC2::Route
@@ -240,33 +313,55 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable2
       SubnetId: !Ref PrivateSubnet2
 
-  DataBaseRouteTable1:
+  PrivateRouteTable3:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} DB-Routes (AZ1)
+          Value: !Sub ${EnvironmentName} Private RTB (AZ3)
+
+  DefaultPrivateRoute3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable3
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway3
+
+  PrivateSubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable3
+      SubnetId: !Ref PrivateSubnet3
+
+  DataBaseRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-DB-RTB
 
   DataBase1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref DataBaseRouteTable1
+      RouteTableId: !Ref DataBaseRouteTable
       SubnetId: !Ref DataBaseSubnet1
 
-  DataBaseRouteTable2:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvironmentName} DB-Routes (AZ2)
+
 
   DataBase2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref DataBaseRouteTable2
+      RouteTableId: !Ref DataBaseRouteTable
       SubnetId: !Ref DataBaseSubnet2    
+
+
+  DataBase3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DataBaseRouteTable
+      SubnetId: !Ref DataBaseSubnet3
 
   PublicNetworkAcl:
     Type: 'AWS::EC2::NetworkAcl'
@@ -274,7 +369,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Nane
-          Value: !Sub ${EnvironmentName}-Public-NACL
+          Value: !Sub ${EnvironmentName}-PUBLIC-NACL
         
   InboundHTTPPublicNetworkAclEntry:
     Type: 'AWS::EC2::NetworkAclEntry'
@@ -299,6 +394,7 @@ Resources:
       PortRange:
         From: '443'
         To: '443'
+
   InboundSSHPublicNetworkAclEntry:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
@@ -310,6 +406,7 @@ Resources:
       PortRange:
         From: '22'
         To: '22'
+
   InboundEmphemeralPublicNetworkAclEntry:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
@@ -321,6 +418,7 @@ Resources:
       PortRange:
         From: '1024'
         To: '65535'
+
   OutboundPublicNetworkAclEntry:
     Type: AWS::EC2::NetworkAclEntry
     Properties:
@@ -343,6 +441,12 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       NetworkAclId: !Ref PublicNetworkAcl
 
+  PublicSubnet3NetworkAclAssociation:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet3
+      NetworkAclId: !Ref PublicNetworkAcl
+
   PrivateNetworkAcl:
     Type: 'AWS::EC2::NetworkAcl'
     Properties:
@@ -358,7 +462,7 @@ Resources:
       RuleNumber: '100'
       Protocol: '6'
       RuleAction: allow
-      CidrBlock: 10.192.0.0/16
+      CidrBlock: 10.192.0.0/16 # vpc cidr
       PortRange:
         From: '0'
         To: '65535'
@@ -385,18 +489,59 @@ Resources:
       SubnetId: !Ref PrivateSubnet2
       NetworkAclId: !Ref PrivateNetworkAcl
 
+  PrivateSubnet3NetworkAclAssociation:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnet3
+      NetworkAclId: !Ref PrivateNetworkAcl    
+
+  DataBaseNetworkAcl:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-DB-NACL
+       
+  InboundDataBaseNetworkAclEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref DataBaseNetworkAcl
+      RuleNumber: '100'
+      Protocol: '6'
+      RuleAction: allow
+      CidrBlock: 10.192.0.0/16 # vpc cidr
+      PortRange:
+        From: '0'
+        To: '65535'
+
+  OutBoundDataBaseNetworkAclEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref DataBaseNetworkAcl
+      RuleNumber: 100
+      Protocol: -1
+      Egress: true
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+
   DataBaseSubnet1NetworkAclAssociation:
     Type: 'AWS::EC2::SubnetNetworkAclAssociation'
     Properties:
       SubnetId: !Ref DataBaseSubnet1
-      NetworkAclId: !Ref PrivateNetworkAcl
+      NetworkAclId: !Ref DataBaseNetworkAcl
 
   DataBaseSubnet2NetworkAclAssociation:
     Type: 'AWS::EC2::SubnetNetworkAclAssociation'
     Properties:
       SubnetId: !Ref DataBaseSubnet2
-      NetworkAclId: !Ref PrivateNetworkAcl
-
+      NetworkAclId: !Ref DataBaseNetworkAcl
+      
+  DataBaseSubnet3NetworkAclAssociation:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref DataBaseSubnet3
+      NetworkAclId: !Ref DataBaseNetworkAcl
 
   MyTestInstance: 
     Type: AWS::EC2::Instance
@@ -440,50 +585,70 @@ Outputs:
     Description: A reference to the created VPC
     Value: !GetAtt VPC.VpcId
     Export:
-      Name: vpcid
+      Name: !Sub '${AWS::StackName}-VpcId'
 
   PublicSubnets:
-    Description: A list of the public subnets
-    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]]
-      Export:
-        Name: pubsubnets
+    Description: A list of the public subnetsIDs
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2, !Ref PublicSubnet3 ]]
+    Export:
+      Name: pubsubnets
+
   PrivateSubnets:
-    Description: A list of the private subnets
-    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ]]
-      Export:
-        Name: prisubnets
+    Description: A list of the private subnetsIDs
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2, !Ref PrivateSubnet3 ]]
+    Export:
+      Name: privsubnets
+
   PublicSubnet1:
     Description: A reference to the public subnet in the 1st Availability Zone
     Value: !GetAtt PublicSubnet1.SubnetId
     Export:
-      Name: pubsub1
+      Name: !Sub '${AWS::StackName}-PublicSubnet1'
 
   PublicSubnet2:
     Description: A reference to the public subnet in the 2nd Availability Zone
     Value: !GetAtt PublicSubnet2.SubnetId
     Export:
-      Name: pubsub2
+      Name: !Sub '${AWS::StackName}-PublicSubnet2'
+
+  PublicSubnet3:
+    Description: A reference to the public subnet in the 3rd Availability Zone
+    Value: !GetAtt PublicSubnet3.SubnetId
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicSubnet3'
 
   PrivateSubnet1:
     Description: A reference to the private subnet in the 1st Availability Zone
     Value: !GetAtt PrivateSubnet1.SubnetId
     Export:
-      Name: privsub1
+      Name: !Sub '${AWS::StackName}-PrivateSubnet1'
 
   PrivateSubnet2:
     Description: A reference to the private subnet in the 2nd Availability Zone
     Value: !GetAtt PrivateSubnet2.SubnetId
     Export:
-      Name: privsub2
+      Name: !Sub '${AWS::StackName}-PrivateSubnet2'
+
+  PrivateSubnet3:
+    Description: A reference to the private subnet in the 3rd Availability Zone
+    Value: !GetAtt PrivateSubnet3.SubnetId
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateSubnet3'
 
   DataBaseSubnet1:
     Description: A reference to the database subnet in the 1st Availability Zone
     Value: !GetAtt DataBaseSubnet1.SubnetId 
     Export:
-      Name: dbsub1
+      Name: !Sub '${AWS::StackName}-DB-Subnet1'
 
   DataBaseSubnet2:
     Description: A reference to the database subnet in the 2nd Availability Zone
     Value: !GetAtt DataBaseSubnet2.SubnetId
     Export:
-      Name: dbsub2
+      Name: !Sub '${AWS::StackName}-DB-Subnet2'
+
+  DataBaseSubnet3:
+    Description: A reference to the database subnet in the 3rd Availability Zone
+    Value: !GetAtt DataBaseSubnet3.SubnetId
+    Export:
+      Name: !Sub '${AWS::StackName}-DB-Subnet3'
