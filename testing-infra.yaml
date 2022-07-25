@@ -1,5 +1,5 @@
 
-Description:  This template deploys a VPC, with three public and private subnets spread
+Description:  This template deploys a VPC, with three public three private, and three database subnets spread
   across three Availability Zones. It deploys an internet gateway, with a default
   route on the public subnets. It deploys three NAT gateways (one in each AZ),
   and default routes for them in the private subnets. 
@@ -543,7 +543,7 @@ Resources:
       SubnetId: !Ref DataBaseSubnet3
       NetworkAclId: !Ref DataBaseNetworkAcl
 
-  MyTestInstance: 
+  MyPubTestInstance1: 
     Type: AWS::EC2::Instance
     Properties: 
       ImageId: 
@@ -551,21 +551,107 @@ Resources:
       InstanceType: 
         Ref: InstanceType
       SecurityGroupIds: 
-        - Ref: SecurityGroup
+        - Ref: PublicSecurityGroup
       SubnetId: !Ref PublicSubnet1
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-Server
+          Value: !Sub ${EnvironmentName}-Server-public1
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          yum update -y
-          yum install -y httpd
-          systemctl start httpd
-          systemctl enable httpd
-          echo “Hello from server in ${AWS::Region}” > /var/www/html/index.html
+          yum install httpd mysql php php-mysql -y
+          amazon-linux-extras install -y php7.2
+          cd /var/www/html
+          wget https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz
+          cp -r wordpress/* /var/www/html/
+          rm -rf wordpress
+          rm -rf latest.tar.gz
+          service httpd start
+          chkconfig httpd on
 
-  SecurityGroup:
+  MyPubTestInstance2: 
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: 
+        Ref: ImageId
+      InstanceType: 
+        Ref: InstanceType
+      SecurityGroupIds: 
+        - Ref: PublicSecurityGroup
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-Server-public2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install httpd mysql php php-mysql -y
+          amazon-linux-extras install -y php7.2
+          cd /var/www/html
+          wget https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz
+          cp -r wordpress/* /var/www/html/
+          rm -rf wordpress
+          rm -rf latest.tar.gz
+          service httpd start
+          chkconfig httpd on
+
+  MyPubTestInstance3: 
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: 
+        Ref: ImageId
+      InstanceType: 
+        Ref: InstanceType
+      SecurityGroupIds: 
+        - Ref: PublicSecurityGroup
+      SubnetId: !Ref PublicSubnet3
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-Server-public3
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install httpd mysql php php-mysql -y
+          amazon-linux-extras install -y php7.2
+          cd /var/www/html
+          wget https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz
+          cp -r wordpress/* /var/www/html/
+          rm -rf wordpress
+          rm -rf latest.tar.gz
+          service httpd start
+          chkconfig httpd on
+
+  MyPrivateTestInstance1: 
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: 
+        Ref: ImageId
+      InstanceType: 
+        Ref: InstanceType
+      SecurityGroupIds: 
+        - Ref: PrivateSecurityGroup
+      SubnetId: !Ref PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-Server-private1
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum install httpd mysql php php-mysql -y
+          amazon-linux-extras install -y php7.2
+          cd /var/www/html
+          wget https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz
+          cp -r wordpress/* /var/www/html/
+          rm -rf wordpress
+          rm -rf latest.tar.gz
+          service httpd start
+          chkconfig httpd on
+
+  PublicSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http access and ssh into the instance
@@ -577,7 +663,22 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
+          CidrIp: 73.70.192.229/32
+      VpcId: !Ref VPC
+
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http access and ssh into the instance
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 10.192.0.0/16
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 73.70.192.229/32
       VpcId: !Ref VPC
 
 Outputs:
@@ -585,7 +686,7 @@ Outputs:
     Description: A reference to the created VPC
     Value: !GetAtt VPC.VpcId
     Export:
-      Name: !Sub '${AWS::StackName}-VpcId'
+      Name: VpcId
 
   PublicSubnets:
     Description: A list of the public subnetsIDs
@@ -599,56 +700,74 @@ Outputs:
     Export:
       Name: privsubnets
 
+  DataBaseSubnets:
+    Description: A list of the database subnetsIDs
+    Value: !Join [ ",", [ !Ref DataBaseSubnet1, !Ref DataBaseSubnet2, !Ref DataBaseSubnet3 ]]
+    Export:
+      Name: databasesubnets
+
   PublicSubnet1:
     Description: A reference to the public subnet in the 1st Availability Zone
     Value: !GetAtt PublicSubnet1.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-PublicSubnet1'
+      Name: PublicSubnet1
 
   PublicSubnet2:
     Description: A reference to the public subnet in the 2nd Availability Zone
     Value: !GetAtt PublicSubnet2.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-PublicSubnet2'
+      Name: PublicSubnet2
 
   PublicSubnet3:
     Description: A reference to the public subnet in the 3rd Availability Zone
     Value: !GetAtt PublicSubnet3.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-PublicSubnet3'
+      Name: PublicSubnet3
 
   PrivateSubnet1:
     Description: A reference to the private subnet in the 1st Availability Zone
     Value: !GetAtt PrivateSubnet1.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-PrivateSubnet1'
+      Name: PrivateSubnet1
 
   PrivateSubnet2:
     Description: A reference to the private subnet in the 2nd Availability Zone
     Value: !GetAtt PrivateSubnet2.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-PrivateSubnet2'
+      Name: PrivateSubnet2
 
   PrivateSubnet3:
     Description: A reference to the private subnet in the 3rd Availability Zone
     Value: !GetAtt PrivateSubnet3.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-PrivateSubnet3'
+      Name: PrivateSubnet3
 
   DataBaseSubnet1:
     Description: A reference to the database subnet in the 1st Availability Zone
     Value: !GetAtt DataBaseSubnet1.SubnetId 
     Export:
-      Name: !Sub '${AWS::StackName}-DB-Subnet1'
+      Name: DB-Subnet1
 
   DataBaseSubnet2:
     Description: A reference to the database subnet in the 2nd Availability Zone
     Value: !GetAtt DataBaseSubnet2.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-DB-Subnet2'
+      Name: DB-Subnet2
 
   DataBaseSubnet3:
     Description: A reference to the database subnet in the 3rd Availability Zone
     Value: !GetAtt DataBaseSubnet3.SubnetId
     Export:
-      Name: !Sub '${AWS::StackName}-DB-Subnet3'
+      Name: DB-Subnet3
+
+  MyPrivateSecurityGroup:
+    Description: A reference to the sg attached the instance
+    Value: !GetAtt PrivateSecurityGroup.GroupId
+    Export:
+      Name: private-SG
+
+  MyPublicSecurityGroup:
+    Description: A reference to the sg attached the instance
+    Value: !GetAtt PublicSecurityGroup.GroupId
+    Export:
+      Name: public-SG    

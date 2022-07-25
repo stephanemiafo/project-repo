@@ -1,0 +1,34 @@
+{
+    "Parameters": {
+        "MyDomainName": {
+            "Default": "*.stephanefamily.com",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "MyCertificate": {
+            "Type": "AWS::CertificateManager::Certificate",
+            "Properties": {
+                "DomainName": {
+                    "Ref": "MyDomainName"
+                },
+                "ValidationMethod": "DNS",
+                "DomainValidationOptions": [
+                    {
+                        "DomainName": "*.stephanefamily.com",
+                        "HostedZoneId": "Z07976071A81VR1JDVH1L"
+                    }
+                ],
+                "SubjectAlternativeNames": [
+                    "stephanefamily.com"
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "MyACM"
+                    }
+                ]
+            }
+        }
+    }
+}
