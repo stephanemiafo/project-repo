@@ -1,0 +1,129 @@
+
+Parameters:
+  # Subnets:
+  #   Type: 'List<AWS::EC2::Subnet::Id>'
+  #   Description: The list of SubnetIds in your Virtual Private Cloud (VPC)
+  #   ConstraintDescription: >-
+  #     must be a list of at least two existing subnets associated with at least
+  #     two different availability zones. They should be residing in the selected
+  #     Virtual Private Cloud.
+  # EnvironmentName:
+  #   Description: An environment name that is prefixed to resource names
+  #   Type: String
+  #   Default: "test"
+  #   AllowedValues: 
+  #     - test
+  #     - dev
+  #     - prod    
+
+  # VpcCIDR:
+  #   Description: Please enter the IP range (CIDR notation) for this VPC
+  #   Type: String
+  #   Default: 10.192.0.0/16
+
+  # DataBaseSubnet1CIDR:
+  #   Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+  #   Type: String
+  #   Default: 10.192.0.0/24
+
+  # DataBaseSubnet2CIDR:
+  #   Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+  #   Type: String
+  #   Default: 10.192.1.0/24
+
+  # DataBaseSubnet3CIDR:
+  #   Description: Please enter the IP range (CIDR notation) for the private subnet in the third Availability Zone
+  #   Type: String
+  #   Default: 10.192.7.0/24
+
+  # DBPort: 
+  #   Default: 3306
+  #   Description: TCP/IP port for the database
+  #   Type: Number
+  #   MinValue: 1150
+  #   MaxValue: 65535
+
+  DBPwd: 
+    NoEcho: true
+    Description: The database admin account password
+    Type: String
+    MinLength: 1
+    MaxLength: 41
+    
+
+Resources:
+  MySQLSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties: 
+      DBSubnetGroupDescription: subnets where the DB will live
+      DBSubnetGroupName: !Sub ${AWS::StackName}-subnet-group 
+      SubnetIds: 
+        #- !ImportValue databasesubnets
+        # - !Join [ ",", [ !Ref DataBaseSubnet1, !Ref DataBaseSubnet2, !Ref DataBaseSubnet3 ]]
+        - !ImportValue DB-Subnet1
+        - !ImportValue DB-Subnet2
+        - !ImportValue DB-Subnet3
+        
+      Tags: 
+        - Key: "Name"
+          Value: !Sub ${AWS::StackName}-subnet-group
+        
+               
+
+  MySQLDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: "20"
+      DBInstanceClass: db.t3.micro
+      DBName: MyDataBase
+      DBSubnetGroupName: !Ref MySQLSubnetGroup
+      Engine: MySQL
+      MasterUsername: Admin
+      MasterUserPassword: !Ref DBPwd
+      MultiAZ: "true"
+      PubliclyAccessible: "false"
+      BackupRetentionPeriod: "3"
+      DBInstanceIdentifier: database-6
+      StorageEncrypted: "true"
+      VPCSecurityGroups: 
+        - !GetAtt 
+          - VpcSecurityGroups
+          - GroupId
+      Tags: 
+        - Key: "Database"
+          Value: !Sub ${AWS::StackName}-My-DB-CFN  
+
+  MySQLRRDatabase:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceClass: db.t3.micro
+      SourceDBInstanceIdentifier: !Ref MySQLDatabase
+      SourceRegion: !Ref MySQLDatabase
+
+  # MySQLRRDatabase2:
+  #   Type: "AWS::RDS::DBInstance"
+  #   Properties:
+  #     DBInstanceClass: db.t3.micro
+  #     SourceDBInstanceIdentifier: arn:aws:rds:us-west-2:236098628221:db:database-5
+  #     SourceRegion: !Ref MySQLDatabase   
+     
+
+  VpcSecurityGroups:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Open database for access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3306'
+          ToPort: '3306'
+          SourceSecurityGroupId: !ImportValue public-SG 
+      VpcId: !ImportValue VpcId
+       
+      Tags: 
+        - Key: "Name"
+          Value: !Sub ${AWS::StackName}-DB-SG
+
+
+
+
+   
