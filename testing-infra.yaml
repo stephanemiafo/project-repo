@@ -74,6 +74,11 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
 
+  MyKeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH to the instance.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+
 
 Resources:
   VPC:
@@ -557,8 +562,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-public1
       UserData:
-        Fn::Base64:   #!Sub |
-         "#!/bin/bash
+        Fn::Base64: !Sub |
+          #!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -568,7 +573,9 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on"
+          chkconfig httpd on
+      KeyName:
+        Ref: MyKeyName
 
   MyPubTestInstance2: 
     Type: AWS::EC2::Instance
@@ -584,8 +591,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-public2
       UserData:
-        Fn::Base64: #!Sub |
-         "#!/bin/bash
+        Fn::Base64: !Sub |
+          #!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -595,8 +602,9 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on"
-
+          chkconfig httpd on
+      KeyName:
+        Ref: MyKeyName
   MyPubTestInstance3: 
     Type: AWS::EC2::Instance
     Properties: 
@@ -611,8 +619,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-public3
       UserData:
-        Fn::Base64:  #!Sub |
-         "#!/bin/bash
+        Fn::Base64: !Sub |
+          #!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -622,8 +630,9 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on"
-
+          chkconfig httpd on
+      KeyName:
+        Ref: MyKeyName
   MyPrivateTestInstance1: 
     Type: AWS::EC2::Instance
     Properties: 
@@ -638,8 +647,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-private1
       UserData:
-        Fn::Base64: #!Sub |
-         "#!/bin/bash
+        Fn::Base64: !Sub |
+          #!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -649,8 +658,9 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on"
-
+          chkconfig httpd on
+      KeyName:
+        Ref: MyKeyName
   PublicSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
