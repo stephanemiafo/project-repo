@@ -16,7 +16,7 @@ phases:
     commands:  # DO THIS AS A USER NOT AS A ROOT
       - echo Build cfn template started on `date`
       - echo Installing cfn-lint 
-      - pip3 install --upgrade pip3 cfn-lint
+      - pip3 install cfn-lint
       - echo validate cfn template
       - cfn-lint testing-infra.yaml  # cfn-lint *.yaml will also work 
       - cfn-lint ACM_certificate.yaml # cfn-lint ACM_certificate.yaml testing-infra.yaml will also work
