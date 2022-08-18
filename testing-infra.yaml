@@ -562,8 +562,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-public1
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
+        Fn::Base64: #!Sub |
+         "#!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -573,7 +573,7 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on
+          chkconfig httpd on"
       KeyName:
         Ref: MyKeyName
 
@@ -591,8 +591,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-public2
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
+        Fn::Base64: #!Sub |
+         "#!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -602,7 +602,7 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on
+          chkconfig httpd on"
       KeyName:
         Ref: MyKeyName
   MyPubTestInstance3: 
@@ -619,8 +619,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-public3
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
+        Fn::Base64: #!Sub |
+         "#!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -630,7 +630,7 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on
+          chkconfig httpd on"
       KeyName:
         Ref: MyKeyName
   MyPrivateTestInstance1: 
@@ -647,8 +647,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-Server-private1
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
+        Fn::Base64: #!Sub |
+         "#!/bin/bash
           yum install httpd mysql php php-mysql -y
           amazon-linux-extras install -y php7.2
           cd /var/www/html
@@ -658,7 +658,7 @@ Resources:
           rm -rf wordpress
           rm -rf latest.tar.gz
           service httpd start
-          chkconfig httpd on
+          chkconfig httpd on"
       KeyName:
         Ref: MyKeyName
   PublicSecurityGroup:
