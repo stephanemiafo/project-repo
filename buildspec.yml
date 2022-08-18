@@ -19,8 +19,8 @@ phases:
       - pip3 install cfn-lint
       - echo validate cfn template
       - cfn-lint testing-infra.yaml  # cfn-lint *.yaml will also work 
-      - cfn-lint ACM_certificate.yaml # cfn-lint ACM_certificate.yaml testing-infra.yaml will also work
-      - cfn-lint dbInstance.yaml
+      - cfn-lint dbInstance.yaml 
+      - cfn-lint ACM_certificate.json # cfn-lint ACM_certificate.yaml testing-infra.yaml will also work
       - echo package the cfn template
       - aws cloudformation package --template-file testing-infra.yaml --s3-bucket madmadmad1234 --output-template-file output-artifacts.yaml
       - aws cloudformation package --template-file ACM_certificate.json --s3-bucket madmadmad1234 --output-template-file result-artifacts.json
